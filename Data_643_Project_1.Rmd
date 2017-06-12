@@ -33,6 +33,7 @@ Load the sample data set with ratings for books and convert the same into a matr
 ```{r message=FALSE, warning=FALSE}
 
 # load csv into data variable 
+# https://raw.githubusercontent.com/isrini/SI_DATA643/master/book_ratings.csv
 data <- read.csv("book_ratings.csv",row.names = 1)
 
 # convert data into a matrix

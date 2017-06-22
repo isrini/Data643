@@ -49,7 +49,7 @@ For a half gridify scheme, ratings get cached and never shuffled. Once item vect
 
 **Key Lessons Learnt**
 
-- Running with larger datasets often results in failed executors and the job never fully recovers
+- Running with larger datasets often results in failed executors and the job never fully recovers. Ideal size is 20% of the data set
 - Leverage the use of PairRDDFunctions - Not exactly sure how but this one is tied to use of Spark and Scala language
 - Kryo serialization is faster than Java serialization with some caveats like writing custom serializers
 

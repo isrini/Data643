@@ -1,0 +1,73 @@
+---
+title: "DATA 643 Discussion 2"
+author: "Srini Illapani"
+date: "June 21, 2017"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: pygments
+    theme: cerulean
+    toc: yes
+  word_document: default
+---
+
+### Topic
+
+Music Recommendations at Scale
+
+
+### Key Themes
+
+Key Topics from the video:
+
+
+* Collaborative Filtering
+
+* Matrix Factorization - Explicit and Implicit
+
+* Spark vs Hadoop MapReduce
+
+* Full and Half gridify mechanism
+
+* Key Lessons Learnt
+
+
+### Discussion
+
+**Collaborative filtering** is commonly used for recommender systems. It is a technique to fill in the missing entries of a user-item association matrix. MLlib (MLlib is Spark's scalable machine learning library consisting of common learning algorithms and utilities) currently supports model-based collaborative filtering, in which users and products are described by a small set of latent factors that can be used to predict missing entries. MLlib uses the alternating least squares (ALS) algorithm to learn these latent factors.
+
+
+
+**Matrix Factorization - Explicit and Implicit** The standard approach to matrix factorization based collaborative filtering treats the entries in the user-item matrix as explicit preferences given by the user to the item. It is common in many real-world use cases to only have access to implicit feedback (e.g. views, clicks, purchases, likes, shares etc.). The approach used in MLlib to deal with such data is taken from Collaborative Filtering for Implicit Feedback Datasets. Essentially instead of trying to model the matrix of ratings directly, this approach treats the data as a combination of binary preferences and confidence values.
+
+
+**Spark vs. Hadoop** Spark is a cluster-computing framework, which means that it competes more with MapReduce than with the entire Hadoop ecosystem. For example, Spark doesn't have its own distributed filesystem, but can use HDFS. Spark uses memory and can use disk for processing, whereas MapReduce is strictly disk-based. Spark is simpler and usually much faster than Mapreduce for the usual Machine learning and Data Analytics applications. The speaker Chris Johnson says that Spark is the clear choice for running the recommender programs and provides a comparison of time it takes by Hadoop MapReduce and Spark, Spark completes the execution 7 times faster.
+
+**Full and Half gridify mechanism** In Full gridify scheme, a lot of intermediate data is sent over the wire for each iteration and a large I/O overhead compared to the half gridify scheme, but has a potential for requiring less local memory comapred to half gridify.
+For a half gridify scheme, ratings get cached and never shuffled. Once item vectors are joined with ratings partitions each partition has enough information to solve optimal user and vectors without any additional shuffling.
+
+
+**Key Lessons Learnt**
+
+- Running with larger datasets often results in failed executors and the job never fully recovers
+- Leverage the use of PairRDDFunctions - Not exactly sure how but this one is tied to use of Spark and Scala language
+- Kryo serialization is faster than Java serialization with some caveats like writing custom serializers
+
+
+### References and relevant info
+
+https://www.youtube.com/watch?v=3LBgiFch4_g&feature=youtu.be
+
+https://databricks-training.s3.amazonaws.com/index.html
+
+https://spark.apache.org/docs/1.2.0/mllib-collaborative-filtering.html
+
+Similar to Netflix Prize, there was a contest by the spanish bank Santandar. Here is the link:
+https://www.kaggle.com/c/santander-product-recommendation#description
+
+
+
+
+
+
+

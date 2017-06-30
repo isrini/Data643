@@ -1,0 +1,69 @@
+---
+title: "DATA 643 Discussion 3"
+author: "Srini Illapani"
+date: "June 29, 2017"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: pygments
+    theme: cerulean
+    toc: yes
+  word_document: default
+---
+
+### Topic
+
+#### Algorithmic discrimination in RecSys
+
+As more systems and sectors are driven by predictive analytics, there is increasing awareness of the possibility and pitfalls of algorithmic discrimination. In what ways do you think Recommender Systems reinforce human bias? Reflecting on the techniques we have covered, do you think recommender systems reinforce or help to prevent unethical targeting or customer segmentation?  Please provide one or more examples to support your arguments.
+
+
+### Discussion
+
+Removing human behaviors from the machines, but this is contrary to our efforts in making machines more human like so they can replace humans with Robots that can exhibit human like responses. 
+
+Human bias is inherent to any kind of ratings or feedback we provide. The question is how not to incroporate the same bias while developing or using algorithmic models. I would classify bias in to two types, one that is induced due to our life expereinces and the other type is induced on purpose to achieve a specific outcome from a target audience or customers.
+
+The examples below cited in 'When Recommendation Systems Go Bad':
+
+* A Study showed lower paying job being recommended to women candidates.
+* A news article mentioned, the possibility of expensive flight recommendations were made to MacBook owners.
+* Google's search results are affected by your previous search history and your user profile.
+
+I agree the first two belong to the induced bias category, however the third one where Google brings search results based on a users search, browsing and profile information could be looked upon as a personalized recommendation, unless Google is serving sponsored results which we might or not find useful. Google gets paid by the clicks by users on their sponsored content, it is in their commercial interest to do so.
+
+Found this interesting paper - 'De-Biasing User Preference Ratings in Recommender Systems'. Here the authors have attempted to study the anchoring bias during the ratings presentation time to the users. Below is a synopisis from their paper.
+
+Based on these previous studies, we know that users' preference ratings can be significantly distorted by the system predicted ratings that are displayed to users. Such distorted preference ratings are subsequently submitted as users' feedback to recommender systems, which can potentially lead to a biased view of consumer preferences and several potential problems:
+
+1. Biases can contaminate the recommender system's inputs, weakening the system's ability to provide high-quality recommendations in subsequent iterations
+
+2. Biases can artificially pull consumers' preferences towards displayed system recommendations, providing a distorted view of the system's performance
+3. Biases can lead to a distorted view of items from the users' perspectives.
+
+Thus, when using recommender systems, anchoring biases can be harmful to system's use and value, and the removal of anchoring biases from consumer ratings constitutes an important and highly practical research problem.
+
+The authors then propose and investigate two possible approaches to tackle the rating de-biasing problem:
+
+1. Post-hoc rating adjustment (reactive approach): a computational approach that attempts to adjust the usersubmitted ratings by taking into account the system recommendation observed by the user.
+
+2. Bias-aware interface design for rating collection (proactive approach): a design-based approach that employs a user interface for rating collection by presenting recommendations in a way that eliminates or reduces anchoring effects. 
+
+The conclusions were mixed and either of the two approaches above have not resulted in any concrete methods of minimizing anchored biases however the seond approach which is based on designing the user interface for designing the ratings collection could help minimize the anchor bias and the authors also recommend incorporating consumer education as another way to minimize bias.
+
+
+
+### References
+
+'De-Biasing User Preference Ratings in Recommender Systems' - https://pdfs.semanticscholar.org/1f61/7bbf087c0e8f6eb6f516f7cff50955a66376.pdf
+
+'When Recommendation Systems Go Bad' - 
+http://cds.nyu.edu/recommendation-systems-go-bad-%E2%80%A8/
+
+
+
+
+
+
+
+

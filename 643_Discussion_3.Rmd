@@ -49,7 +49,7 @@ The authors then propose and investigate two possible approaches to tackle the r
 
 2. Bias-aware interface design for rating collection (proactive approach): a design-based approach that employs a user interface for rating collection by presenting recommendations in a way that eliminates or reduces anchoring effects. 
 
-The conclusions were mixed and either of the two approaches above have not resulted in any concrete methods of minimizing anchored biases however the seond approach which is based on designing the user interface for designing the ratings collection could help minimize the anchor bias and the authors also recommend incorporating consumer education as another way to minimize bias.
+The conclusions were mixed and either of the two approaches above have not resulted in any concrete methods of minimizing anchored biases however the second approach which is based on designing the user interface for designing the ratings collection could help minimize the anchor bias and the authors also recommend incorporating consumer education as another way to minimize bias.
 
 
 

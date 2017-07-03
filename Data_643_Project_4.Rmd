@@ -1,0 +1,408 @@
+---
+title: "DATA 643 Project 4 | Accuracy and Beyond"
+author: "Jason Joseph, Srini Illapani"
+date: "July 02, 2017"
+output: 
+  html_document:
+    fig_caption: yes
+    highlight: pygments
+    theme: cerulean
+    toc: yes
+---
+
+```{r message=FALSE,warning=FALSE}
+library(data.table)
+library(reshape2)
+library(recommenderlab)
+library(ggplot2)
+library(pander)
+```
+
+# 1.0 Objective
+
+1. As in your previous assignments, compare the accuracy of at least two recommender system algorithms against your offline data.
+2. Implement support for at least one business or user experience goal such as increased serendipity, novelty, or diversity.
+3. Compare and report on any change in accuracy before and after you've made the change in #2.
+4. As part of your textual conclusion, discuss one or more additional experiments that could be performed and/or metrics that could be evaluated only if online evaluation was possible. Also, briefly propose how you would design a reasonable online evaluation environment.
+
+
+# 2.0 Data Sourcing and Loading
+
+Our dataset contains social networking, tagging, and music artist listening information from a set of 2K users from Last.fm online music system.
+
+```{r message=FALSE,warning=FALSE}
+# user artist plays
+data_set <- fread('user_artists.dat',header = T,sep='\t')
+data_set <- as.data.frame(data_set)
+# artist listing
+artist_ds <- fread('artists.dat',header = T,sep='\t')
+artist_ds <- as.data.frame(artist_ds)
+# create programmer friendly column names. 
+colnames(data_set) <- c('userID','artistID','listeningCount')
+head(data_set)
+
+```
+
+
+# 3.0 Data Transformation
+
+Our goal in this section is to restructure our user-artist dataset into a wide matrix format.
+There are 1892 users and 17632 artists.
+
+```{r message=FALSE,warning=FALSE}
+# coverting our dataset into a wide format. Where the artistID are the col names and userID row names.
+data_matrix<- acast(data_set, userID ~ artistID)
+data_matrix<- as.matrix(data_matrix)
+dim(data_matrix)
+
+```
+
+
+
+## 3.1 Creating Recommender Matrices
+
+
+We plan to represent our rating matrix in two forms:
+
+* Real rating matrix 
+
+* Binary rating matrix (If the user has played the song we will assign it a vaule of one (1) and zero (0) if the song wasn't played.)
+
+
+```{r message=FALSE,warning=FALSE}
+
+# creating rating matrix
+s_matrix <- as(data_matrix,'realRatingMatrix')
+
+# creating binary matrix
+data_matrix_bin <- data_matrix
+
+# set values more than 1 to 1 and NA values to 0
+data_matrix_bin[data_matrix_bin > 1] <- 1
+data_matrix_bin[is.na(data_matrix_bin)] <- 0
+
+#binarize(data_matrix_bin, minRating = 1)
+bin_matrix <- as(data_matrix_bin,'binaryRatingMatrix')
+
+# normalizing the matrix
+#s_norm <- normalize(s_matrix)
+#bin_norm <- normalize(s_matrix)
+```
+
+
+## 3.2 Data Visualization
+
+
+```{r message=FALSE,warning=FALSE}
+artist_play <- colCounts(s_matrix)
+
+# sorting artist by number of plays
+artist_lis <- data.frame(artist= artist_ds[which(artist_ds$id== names(artist_play)),]$name,plays= artist_play)
+artist_lis <- artist_lis[order(artist_lis$plays, decreasing =TRUE), ]
+ggplot(artist_lis[1:6, ], aes(x = artist, y = plays)) +geom_bar(stat="identity") + ggtitle("Number of plays of the top artists")
+
+```
+
+
+Lady Gaga received the most plays with Britney Spares following. Surprising they both received more plays than Rihanna.
+
+
+### 3.2.1 Heatmaps
+
+Let's visualize the listeners and artists using heatmaps.
+
+
+```{r message=FALSE,warning=FALSE, echo=FALSE}
+image(bin_matrix, main = "Heat Map of Artist Plays Matrix")
+```
+
+The heatmap is dense.The cart is unreadable because there are too many users and plays. We will build a smaller heatmap with the first 100 users and first 100 artists.
+
+
+```{r message=FALSE,warning=FALSE, echo=FALSE}
+
+image(s_matrix[1:100,1:100], main = "Heat Map of first 100 Artist and Listeners Plays Matrix")
+```
+
+
+# 4.0 Split the dataset into Train and Test
+
+We decided to use 80% of our dataset for training and the remaining 20% for testing.
+
+
+```{r, warning=FALSE, message=FALSE}
+
+## Picking 80% of the sample
+set.seed(123)
+
+which_train <- sample(x = c(TRUE, FALSE),size = nrow(s_matrix),replace = TRUE,prob = c(0.8, 0.2))
+which_train_bin <- sample(x = c(TRUE, FALSE),size = nrow(bin_matrix),replace = TRUE,prob = c(0.8, 0.2))
+
+train_matrix_raw <- s_matrix[which_train, ]
+test_matrix_raw <- s_matrix[!which_train, ]
+
+train_matrix_bin <- bin_matrix[which_train_bin, ]
+test_matrix_bin <- bin_matrix[!which_train_bin, ]
+
+
+```
+
+
+#4.1 Dimensions of Test and Training Matrices
+
+## Raw Listenig Matrix
+
+Training
+
+```{r echo=FALSE}
+train_matrix_raw
+```
+
+Test
+
+```{r echo=FALSE}
+test_matrix_raw
+```
+
+
+## Binarized Listenig Matrix
+
+Training
+
+```{r echo=FALSE}
+train_matrix_bin
+```
+
+Test
+```{r echo=FALSE}
+test_matrix_bin
+```
+
+
+
+# 5.0 Model Building
+
+We will construct User Based and Item Based Collaborative Filtering Models for our Raw Listening Matrix and our Binarized Listening Matrix.
+
+We decided to restrict our matrix to 500 items when performing only item-based collaborative filtering since the Item-based models took over 2 hours to create. 
+
+
+```{r message=FALSE,warning=FALSE}
+
+# creating models for our raw matrix
+raw_ubcf_model <- Recommender(train_matrix_raw[,1:500],method="UBCF",param=NULL)
+raw_ibcf_model <- Recommender(train_matrix_raw[,1:500],method="IBCF",param=NULL)
+
+# creating model for our binarized matrix. Using Jaccard as our distance method since it is preferred choice for binary data.
+bin_ubcf_model <- Recommender(train_matrix_bin[,1:500],method="UBCF",param= list(method = "Jaccard"))
+bin_ibcf_model <- Recommender(train_matrix_bin[,1:500],method="IBCF",param= list(method = "Jaccard"))
+
+#recom <- predict(rec, r[1:nrow(r)], type="ratings")
+#recom
+#names(getModel(rec))
+```
+
+
+#5.1 Visualizing our Item Based Collaborative Filtering Models
+
+Raw Listening Matrix Model
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+image(raw_ibcf_model@model$sim)
+```
+
+Binarized Listening Matrix Model
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+image(bin_ibcf_model@model$sim)
+```
+
+
+# 6.0 Prediction
+
+We will peform prediction using the models we created above against our test data. Our plan is to recommend 10 items to each user. 
+
+
+```{r warning=FALSE, message=FALSE}
+
+n_recommended <- 10
+bin_predicted_ubcf <- predict(object = bin_ubcf_model,newdata = test_matrix_bin[,1:500],n = n_recommended)
+bin_predicted_ibcf <- predict(object = bin_ibcf_model,newdata = test_matrix_bin[,1:500],n = n_recommended)
+
+
+raw_predicted_ubcf <- predict(object = raw_ubcf_model,newdata = test_matrix_raw[,1:500],n = n_recommended)
+raw_predicted_ibcf <- predict(object = raw_ibcf_model,newdata = test_matrix_raw[,1:500],n = n_recommended)
+```
+
+
+```{r}
+# create functions that returns prediction 
+
+table_labels <- data.frame(id = bin_predicted_ubcf@itemLabels)
+table_labels <- merge(table_labels, artist_ds,by = "id", all.x = TRUE, all.y = FALSE,sort = FALSE)
+descriptions <- as(table_labels$name, "character")
+
+getModelPredictionForUser <- function(userIndex,model) 
+{
+  user_rec <- model@items[[userIndex]]  
+  return(descriptions[user_rec])
+}
+
+head(getModelPredictionForUser(1,bin_predicted_ubcf))
+
+```
+
+
+# 6.1 Top 5 Recommendations for User 1
+
+
+
+```{r}
+
+bin_ibcf_pre <- head(getModelPredictionForUser(1,bin_predicted_ibcf))
+bin_ubcf_pre <- head(getModelPredictionForUser(1,bin_predicted_ubcf))
+
+raw_ibcf_pre <- head(getModelPredictionForUser(1,raw_predicted_ibcf))
+raw_ubcf_pre <- head(getModelPredictionForUser(1,raw_predicted_ubcf))
+
+output <- data.frame(binaryIBCF = bin_ibcf_pre, binaryUBCF = bin_ubcf_pre, rawIBCF= raw_ibcf_pre,rawUBCF= raw_ubcf_pre, stringsAsFactors = FALSE)
+knitr::kable(output)
+```
+
+# 7.0 Model Evaluation
+
+we can measure the performance depending on number of neighbors. Since we are optimizing the IBCF part only, we will set weight description to zero. Using lapply, we can build a list of elements that contain the performance for the value of nn_to_test:
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE}
+
+evaluateModel <- function (train_data,test_data,number_neighbors = 30,items_to_recommend = 10,recMethod ="IBCF",paramMethod="Jaccard",goodRatingVal = 0 )
+{
+  if(recMethod == "UBCF")
+  {
+recc_model <- Recommender(data = train_data,method = recMethod,parameter = list(nn = number_neighbors))    
+  }else
+  {
+    recc_model <- Recommender(data = train_data,method = recMethod,parameter = list(method = paramMethod,k = number_neighbors))
+  }
+
+
+eval_prediction<- predict(object = recc_model,newdata = test_data,n = n_recommended)
+if(goodRatingVal > 0)
+{
+  eval_accuracy <- calcPredictionAccuracy(x = eval_prediction,data = test_data,byUser = FALSE,given = items_to_recommend, goodRating= goodRatingVal)
+}else
+  
+{
+eval_accuracy <- calcPredictionAccuracy(x = eval_prediction,data = test_data,byUser = FALSE,given = items_to_recommend)  
+}
+return (eval_accuracy)
+}
+
+```
+
+## 7.1 Item Based
+
+* True Positives (TP): These are recommended items that have been purchased
+* False Positives (FP): These are recommended items that haven't been purchased
+* False Negatives( FN): These are not recommended items that have been purchased
+* True Negatives (TN): These are not recommended items that haven't been purchased
+
+* True Positive Rate (TPR): This is the percentage of purchased items that have been recommended 
+* False Positive Rate (FPR): This is the percentage of not purchased items that have been recommended
+
+A perfect (or overfitted) model would have only TP and TN.
+
+### Raw Ratings 
+
+```{r message=FALSE,warning=FALSE}
+
+# neigbors to test
+n_n_test <- 25
+
+list_performance_1 <- lapply(X = n_n_test,FUN = function(nn){
+evaluateModel(train_data = train_matrix_raw[,1:500],test_data=test_matrix_raw[,1:500],number_neighbors = nn,goodRatingVal=1,paramMethod="cosine")})
+
+pander(unlist(list_performance_1))
+
+```
+
+The results show TP = 0, meaning the recommended items have not been purchased.
+
+
+### Binarized Ratings 
+
+```{r message=FALSE,warning=FALSE}
+
+list_performance_2 <- lapply(X = n_n_test,FUN = function(nn){
+evaluateModel(train_data = train_matrix_bin[,1:500],test_data=test_matrix_bin[,1:500],number_neighbors = nn)})
+
+pander(unlist(list_performance_2))
+
+```
+
+The results show TP = 0, meaning the recommended items have not been purchased.
+
+
+## 7.2 User Based
+
+* True Positives (TP): These are recommended items that have been purchased
+* False Positives (FP): These are recommended items that haven't been purchased
+* False Negatives( FN): These are not recommended items that have been purchased
+* True Negatives (TN): These are not recommended items that haven't been purchased
+
+* True Positive Rate (TPR): This is the percentage of purchased items that have been recommended 
+* False Positive Rate (FPR): This is the percentage of not purchased items that have been recommended
+
+A perfect (or overfitted) model would have only TP and TN.
+
+### Raw Ratings
+
+```{r message=FALSE,warning=FALSE}
+
+list_performance_3 <- lapply(X = n_n_test,FUN = function(nn){
+evaluateModel(train_data = train_matrix_raw[,1:500],test_data=test_matrix_raw[,1:500],recMethod ="UBCF",number_neighbors =nn,goodRatingVal=1,paramMethod="cosine")})
+
+pander(unlist(list_performance_3))
+```
+
+The results show TP = 0, meaning the recommended items have not been purchased.
+
+### Binarized Ratings 
+
+```{r message=FALSE,warning=FALSE}
+
+# neigbors to test
+
+list_performance_4 <- lapply(X = n_n_test,FUN = function(nn){
+evaluateModel(train_data = train_matrix_bin[,1:500],test_data=test_matrix_bin[,1:500],recMethod ="UBCF",number_neighbors = nn)})
+
+pander(unlist(list_performance_4))
+```
+
+The results show TP = 0, meaning the recommended items have not been purchased.
+
+##7.1  Increased Serendipity
+
+Serendipity is defined as finding something good or useful while not specifically searching for it.
+
+To achieve increased serendipity in our approach, we can try append random artists into the suggestion list. This will introduce the user to new artists. A detail analysis of this approach would entail further tweaking and running of the model, which is outside the scope of our work here due to the time constraint.
+
+
+# Summary
+
+Based on the above, we demonstrated how to apply the techniques in a real-life context. Starting with raw unstructured data, we built a rating matrix, which is the input of collaborative filtering. Using performance evaluations, we optimized the model parameters. The same approach can be applied in real-life contexts, if properly refined models are used.
+
+The model evaluation using the item based as well as the user based matrix did not yield any True Positives, meaning there were no purchases made based on the recommendations. This could mean the model is not appropriate for this particular exercise or might need firther fine turing and optimization.
+
+There are different ways to evaluate performances that might potentially lead to different choices. Depending on the business target, the evaluation metric is different.
+
+
+#Dataset Credit
+
+* Source url: http://files.grouplens.org/datasets/hetrec2011/hetrec2011-lastfm-2k.zip, http://www.lastfm.com 
+
+* Authors: Cantador, Iv,Brusilovsky, Peter and Kuflik, Tsvi
+
+* Title: 2nd Workshop on Information Heterogeneity and Fusion in Recommender Systems (HetRec 2011)
+

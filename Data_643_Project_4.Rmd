@@ -32,11 +32,16 @@ Our dataset contains social networking, tagging, and music artist listening info
 
 ```{r message=FALSE,warning=FALSE}
 # user artist plays
-data_set <- fread('user_artists.dat',header = T,sep='\t')
+url1 <- https://raw.githubusercontent.com/isrini/SI_DATA643/master/user_artists.dat
+data_set <- fread(url1, header = T,sep='\t')
 data_set <- as.data.frame(data_set)
+
 # artist listing
-artist_ds <- fread('artists.dat',header = T,sep='\t')
+url2 <- https://raw.githubusercontent.com/isrini/SI_DATA643/master/artists.dat
+
+artist_ds <- fread(url2, header = T,sep='\t')
 artist_ds <- as.data.frame(artist_ds)
+
 # create programmer friendly column names. 
 colnames(data_set) <- c('userID','artistID','listeningCount')
 head(data_set)
